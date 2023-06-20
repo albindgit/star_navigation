@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='starworld_tunnel_mpc',
+setup(name='star_navigation',
       version='1.0',
       packages=find_packages(),
       install_requires=[

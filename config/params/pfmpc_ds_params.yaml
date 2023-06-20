@@ -1,0 +1,41 @@
+
+pfmpc_ds:
+  # Workspace modification
+  rho0: 0.2
+  gamma: 0.9
+  make_convex: 1
+  iterative_rho_reduction: 0
+  max_obs_compute_time: 1000
+  hull_epsilon: 0.1
+  use_prev_workspace: 1
+  workspace_horizon: 4
+  # Target generation
+  convergence_tolerance: 1.e-3
+  max_rhrp_compute_time: 30
+  crep: 1.5
+  reactivity: 1.0
+  buffer: 1
+  rhrp_steps: 12
+  nominal_rhrp_horizon: 2
+  # MPC
+  ce: 1
+  cs: 1.
+  R: [0.1, 0.1]
+  DR: [0.1, 0.]
+  convergence_margin: 0.02
+  lambda: 0.5
+
+  #-------- MPC Build params --------- #
+  build_mode: 'release'
+  integration_method: 'RK4'
+  n_pol: 6
+  N: 6
+  dt: 0.2
+  solver_tol: 1.e-5
+  solver_max_time: 100 # Maximum duration for mpc solver in milliseconds
+  solver_max_inner_iterations: 110
+  solver_max_outer_iterations: 10
+  solver_initial_tol: 1.e-4
+  solver_delta_tol: 1.e-4
+  solver_weight_update_factor: 10.0
+  solver_initial_penalty: 1000.0

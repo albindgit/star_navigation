@@ -1,0 +1,14 @@
+soads:
+  dt: 0.1
+  starify: 1
+  hull_epsilon: 0.5
+  max_compute_time: 1000
+  make_convex: 0
+  adapt_obstacle_velocity: 1
+  unit_magnitude: 0
+  crep: 1.5
+  reactivity: 1.
+  tail_effect: 0
+  convergence_tolerance: 0.01
+  lin_vel: 1.5
+  dp_decay_rate: 0.5

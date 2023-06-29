@@ -49,12 +49,16 @@ class MotionController:
                 obs_par[j + 1:j + 3] = o._a  # Ellipse axes
                 mm = o._motion_model
                 pos, rot, t = mm.pos().copy(), mm.rot(), mm._t
+                if hasattr(mm, '_wp_idx'):
+                    wp_idx = mm._wp_idx
                 for k in range(self.mpc.build_params['N_obs_predict']):
                     obs_par[j + 3 + 3 * k:j + 5 + 3 * k] = mm.pos()  # Ellipse position
                     obs_par[j + 5 + 3 * k] = mm.rot()  # Ellipse orientation
                     mm.move(None, self.mpc.build_params['dt'])
                 mm.set_pos(pos), mm.set_rot(rot)
                 mm._t = t
+                if hasattr(mm, '_wp_idx'):
+                    mm._wp_idx = wp_idx
 
                 obs_par_padded[j:j + 3 * (self.mpc.build_params['N_obs_predict'] + 1)] = obs_par[j:j + 3 * (
                             self.mpc.build_params['N_obs_predict'] + 1)]
@@ -112,13 +116,11 @@ class MotionController:
         else:
             init_guess = None
         solution_data = self.mpc.run(x.tolist(), self.u_prev, self.path_pol, self.params, obs_par_padded, init_guess)
-        # solution_data = self.mpc.run(x.tolist(), self.u_prev, self.path_pol, self.params, 1, 0.1, self.solution)
         if solution_data is None:
             self.sol_feasible, self.mpc_exit_status = False, "None"
         else:
             self.solution, self.mpc_exit_status = solution_data.solution, solution_data.exit_status
             self.sol_feasible = self.mpc.is_feasible(self.solution, x.tolist(), self.path_pol, obs_par, d=self.verbosity > 0)
-        # self.sol_feasible = self.mpc.is_feasible(self.solution, x.tolist(), self.path_pol, 1, 0.1, d=self.verbosity > 0)
 
         if self.sol_feasible:
             u, w = self.mpc.sol2uds(self.solution)

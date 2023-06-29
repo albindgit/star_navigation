@@ -37,6 +37,7 @@ class MotionController:
         self.r_plus = None
         self.theta = 0
         self.ds_generated_path = None
+        self.rg = None
         self.pg_buffer = None
         self.pg = None
         self.rhrp_path = None
@@ -204,18 +205,20 @@ class MotionController:
         self.timing['mpc'] = 0
         self.timing['workspace_detailed'] = None
 
+        pg_prev = self.pg
+        self.rg = None
+        self.pg = None
         self.rho = self.params['rho0']
-        self.pg = np.array(self.reference_path.coords[-1])
-        close_to_convergence = (np.linalg.norm(self.r_plus - self.pg) < self.rho) and (self.theta >= self.theta_g)
+        ref_end = np.array(self.reference_path.coords[-1])
+        close_to_convergence = (np.linalg.norm(self.r_plus - ref_end) < self.rho) and (self.theta >= self.theta_g)
         if close_to_convergence:
             self.mode = ControlMode.SBC
             for i in range(len(self.rhrp_s)):
-                self.rhrp_path[i, :] = self.pg
+                self.rhrp_path[i, :] = ref_end
         else:
             ds_path_generation = True
             if self.theta_g > 0:
                 # Extract receding path from global target path
-
                 t0 = tic()
                 obstacles_rho, workspace_rho, free_rho_sh, obstacles_rho_sh = rho_environment(workspace, obstacles, self.rho)
                 self.timing['workspace'] = toc(t0)
@@ -232,7 +235,7 @@ class MotionController:
                     self.workspace_rho = workspace_rho
                     self.obstacles_star = []
                     self.obstacle_clusters = None
-                    self.pg = self.rhrp_path[-1, :]
+                    # self.pg = self.rhrp_path[-1, :]
                     rhrp_path_length = self.rhrp_L
                 self.timing['target'] = toc(t0)
 
@@ -240,7 +243,7 @@ class MotionController:
                 # Find attractor for DS dynamics
                 if self.theta_g == 0:
                     pass
-                    # pg = np.array(self.reference_path.coords[0])
+                    self.pg = np.array(self.reference_path.coords[0])
                 else:
                     t0 = tic()
                     self.theta = self.theta_plus(self.params['nominal_rhrp_horizon'])
@@ -254,18 +257,20 @@ class MotionController:
                     self.timing['workspace'] += toc(t0)
 
                 pg_buffer_thresh = 0.5
-                new_pg_buffer = not self.ds_generated_path #or np.linalg.norm(self.pg_buffer - pg) > pg_buffer_thresh
-                if new_pg_buffer:
-                    self.pg_buffer = self.pg
+                # new_pg_buffer = not self.ds_generated_path or np.linalg.norm(self.pg_buffer - self.pg) > pg_buffer_thresh
+                # if new_pg_buffer:
+                #     self.pg_buffer = self.pg
 
-                buffer_active = self.params['buffer'] and not new_pg_buffer
+                buffer_active = self.params['buffer'] and (self.ds_generated_path and np.linalg.norm(pg_prev - self.pg) < pg_buffer_thresh)
                 buffer_path = self.rhrp_path if buffer_active else None
+                if buffer_active:
+                    self.pg_buffer = self.pg
 
                 local_pars = self.params.copy()
                 local_pars['max_rhrp_compute_time'] -= self.timing['target']
 
                 self.rhrp_path, rhrp_path_length, self.obstacle_clusters, self.obstacles_rho, self.workspace_rho, \
-                self.obstacles_star, self.rho, self.pg, workspace_exitflag, workspace_timing, target_timing, self.timing['workspace_detailed'] = \
+                self.obstacles_star, self.rho, self.rg, workspace_exitflag, workspace_timing, target_timing, self.timing['workspace_detailed'] = \
                     ds_path_gen(obstacles, workspace, p, self.pg, self.r_plus, self.params['rho0'], self.params['hull_epsilon'], self.rhrp_s,
                                 self.obstacle_clusters, buffer_path, local_pars, self.verbosity)
 

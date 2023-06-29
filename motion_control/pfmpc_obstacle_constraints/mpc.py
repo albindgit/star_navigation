@@ -129,7 +129,7 @@ class Mpc:
         u_max, w_max, sN_max,  x_max, obs_val_max = self.max_bounds()
         obs_val = self.sol2obsval(sol, x0, obs_par)
 
-        eps_val = 1e-4
+        eps_val = 1e-8
         def in_range(val, min, max):
             return ((val >= min - eps_val) & (val <= max + eps_val)).all()
 
@@ -154,16 +154,7 @@ class Mpc:
             if d:
                 print("[MPC]: Bad sN {:.4f} > {:.4f}".format(s[-1], sN_max))
         if not in_range(obs_val, 0, 0):
-            print("Solution collision")
-        #     sol_ok = False
-        # if not in_range(obs_val, obs_val_min, obs_val_max):
-        #     sol_ok = False
-        #     if d:
-        #         print("[MPC]: Bad obs_val")
-        #         bad_idcs = np.flatnonzero(obs_val > obs_val_max)
-        #         for i in bad_idcs:
-        #             print("Collision with obstacle nr " + str(i % self.build_params['max_No_ell'] + 1) + " at time index " + str(i // self.build_params['max_No_ell']))
-                # print(obs_val)
+            sol_ok = False
         return sol_ok
 
     def error(self, x, s, path_pol):

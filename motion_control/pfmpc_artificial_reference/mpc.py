@@ -107,19 +107,6 @@ class Mpc:
             ver += 1
         return True, 'ver' + str(ver)
 
-    # Returns >0 for interior points, otherwise 0
-    # def convex_polygon_function(self, p, vertices):
-    #     ret_val = 1
-    #     for i in range(self.build_params['max_No_vert']):
-    #         x1, y1 = vertices[i*2], vertices[i*2+1]
-    #         x2, y2 = vertices[(i + 1) % self.build_params['max_No_vert']], vertices[(i + 1) % self.build_params['max_No_vert']+1]
-    #         dx = x2 - x1
-    #         dy = y2 - y1
-    #         Ai = cs.vertcat(dy, -dx)
-    #         bi = x1 * dy - y1 * dx
-    #         ret_val *= cs.fmax(bi - cs.dot(Ai, p), 0)
-    #     return ret_val
-
     def cs_obstacle_evaluation(self, obs_par, x, k):
         n_ell_par = 3 * self.build_params['max_No_ell'] * (1 + self.build_params['N_obs_predict'])
         obs_val = []
@@ -158,7 +145,6 @@ class Mpc:
         if not in_range(con, con_min - eps, con_max + eps):
             sol_ok = False
         if not in_range(obs_val, 0 - eps, 0 + eps):
-            print("Solution collision")
             sol_ok = False
 
         return sol_ok

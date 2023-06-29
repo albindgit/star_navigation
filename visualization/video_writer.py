@@ -20,7 +20,7 @@ class VideoWriter:
         mat = np.array(canvas.renderer._renderer)
         mat = cv2.cvtColor(mat, cv2.COLOR_RGB2BGR)
         if self.video is None:
-            file_path = str(pathlib.PurePath(pathlib.Path(__file__).parent, self.file_name + '.mp4'))
+            file_path = str(pathlib.PurePath(pathlib.Path(__file__).parents[0].joinpath("videos"), self.file_name + '.mp4'))
             self.video = cv2.VideoWriter(file_path, cv2.VideoWriter_fourcc(*'mp4v'), self.framerate, (mat.shape[1], mat.shape[0]))
 
         # write frame to video

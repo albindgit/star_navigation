@@ -8,8 +8,8 @@ pfmpc_obstacle_constraints:
   # MPC
   ce: 1
   cs: 1.
-  R: [0.1, 0.1]
-  DR: [0.1, 0.]
+  R: [0.2, 0.1]
+  DR: [0.01, 0.]
   convergence_margin: 0.02
 
   obs_pen: 1.e+5

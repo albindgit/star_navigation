@@ -556,7 +556,7 @@ class Scene:
             o.move(dt)
             # if not o.exterior_point(robot_pos):
             if o.polygon().distance(shapely.geometry.Point(robot_pos)) < 1e-2:
-                print("[Scene]: Obstacle " + str(o) + " stands still to avoid moving into robot.")
+                # print("[Scene]: Obstacle " + str(o) + " stands still to avoid moving into robot.")
                 o._motion_model.set_pos(prev_pos)
                 o._motion_model.set_rot(prev_rot)
         for i in range(len(self.obstacles)):

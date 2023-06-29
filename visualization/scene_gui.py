@@ -20,21 +20,12 @@ class SceneGUI:
         self.scene = scene
         self.robot = robot
         self.fig, self.ax = plt.subplots()
-        self.ax.set_xlim(xlim), self.ax.set_ylim(ylim)
         if not show_axis:
             self.ax.set_axis_off()
-        # if len(reference_path) > 1:
-        #     self.ax.plot([r[0] for r in reference_path], [r[1] for r in reference_path], color=reference_color, alpha=reference_alpha, zorder=-2)
-        # else:
-        #     self.ax.plot(*reference_path[-1], color=reference_color, alpha=reference_alpha, marker=reference_marker, markersize=reference_markersize)
-        # self.obstacle_handles = []
         self.scene_handles, _ = self.scene.init_plot(self.ax, obstacle_color=obstacle_color, obstacle_edge_color=obstacle_edge_color, show_obs_name=show_obs_name, draw_p0=0, draw_ref=1, reference_color=reference_color, reference_alpha=reference_alpha, reference_marker=reference_marker, reference_markersize=reference_markersize)
         self.robot_handles, _ = robot.init_plot(ax=self.ax, color=robot_color, markersize=robot_markersize, alpha=robot_alpha)
-        # for o in obstacles:
-        #     lh, _ = o.init_plot(ax=self.ax, fc=obstacle_color, ec=obstacle_edge_color, show_name=show_obs_name,
-        #                         show_reference=False)
-        #     self.obstacle_handles.append(lh)
         self.travelled_path_handle = self.ax.plot([], [], color=travelled_path_color, linestyle=travelled_path_linestyle, linewidth=travelled_path_linewidth, zorder=0)[0]
+        self.ax.set_xlim(xlim), self.ax.set_ylim(ylim)
         # Simulation ctrl
         self.fig_open = True
         self.paused = True
@@ -43,8 +34,6 @@ class SceneGUI:
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         # Memory
         self.travelled_path = []
-        #
-        # self.update(init_robot_state, goal, 0)
 
     def update(self, robot_state=None, time=None):
         if time:
@@ -133,25 +122,29 @@ class StarobsGUI(SceneGUI):
 class PFMPCGUI(SceneGUI):
 
     def __init__(self, robot, scene, init_robot_state, xlim, ylim, show_axis=False,
-                 robot_color='y', robot_markersize=14, robot_alpha=0.7,
+                 robot_color='c', robot_markersize=10, robot_alpha=1,
                  obstacle_color='lightgrey', obstacle_edge_color='k', show_obs_name=False,
-                 reference_color='y', reference_alpha=1, reference_marker='*', reference_markersize=14,
-                 travelled_path_color='k', travelled_path_linestyle='-', travelled_path_linewidth=2,
+                 reference_color='y', reference_alpha=1, reference_marker='*', reference_markersize=10,
+                 travelled_path_color='k', travelled_path_linestyle='--', travelled_path_linewidth=2,
                  theta_pos_color='y', theta_pos_marker='*', theta_pos_markersize=10,
-                 s1_pos_color='g', s1_pos_marker='+', s1_pos_markersize=10,
-                 pg_color='g', pg_marker='+', pg_markersize=10,
-                 receding_path_color='g', receding_path_linestyle='-', receding_path_linewidth=4, receding_path_marker=None,
-                 mpc_path_color='k', mpc_path_linestyle=':', mpc_path_linewidth=4,
-                 base_sol_color='c', base_sol_linestyle=':', base_sol_linewidth=4,
+                 s1_pos_color='None', s1_pos_marker='+', s1_pos_markersize=10,
+                 pg_color='b', pg_marker='*', pg_markersize=10,
+                 receding_path_color='g', receding_path_linestyle='-', receding_path_linewidth=1, receding_path_marker=None,
+                 mpc_path_color='k', mpc_path_linestyle='-', mpc_path_linewidth=1,
+                 base_sol_color='None', base_sol_linestyle=':', base_sol_linewidth=1,
                  mpc_artificial_path_color='y', mpc_artificial_path_linestyle='-.', mpc_artificial_path_linewidth=4,
-                 mpc_tunnel_color='r', mpc_tunnel_linestyle='--', mpc_tunnel_linewidth=2, mpc_tunnel_alpha=1,
-                 obstacles_star_color='r', obstacles_star_show_reference=False, obstacles_star_alpha=0.1,
-                 workspace_rho_color='tab:blue', workspace_rho_show_reference=False, workspace_rho_linestyle='--',
+                 mpc_tunnel_color='r', mpc_tunnel_linestyle='--', mpc_tunnel_linewidth=1, mpc_tunnel_alpha=1,
+                 obstacles_star_color='b', obstacles_star_show_reference=False, obstacles_star_alpha=0.2,
+                 workspace_rho_color='None', workspace_rho_show_reference=False, workspace_rho_linestyle='--',
+                 workspace_horizon_color='tab:blue', workspace_horizon_linestyle='--', workspace_horizon_linewidth=1,
                  show_u_history=False, u_history_color='k', u_history_marker='o',
                  show_mpc_solution=False, show_mpc_cost=False, controller=None,
-                 show_time=True, show_timing=True):
+                 indicate_sbc=True, sbc_color='r',
+                 show_time=True, show_timing=False):
         self.show_timing = show_timing
         self.show_time = show_time
+        self.indicate_sbc = indicate_sbc
+        self.robot_color, self.sbc_color = robot_color, sbc_color
         self.obstacle_star_handles = []
         self.obstacles_star_draw_options = {'fc': obstacles_star_color, 'show_reference': obstacles_star_show_reference,
                                             'alpha': obstacles_star_alpha, 'zorder': 0}
@@ -159,17 +152,19 @@ class PFMPCGUI(SceneGUI):
                                             'linestyle': workspace_rho_linestyle, 'zorder': -4}
         super().__init__(robot, scene, xlim, ylim, show_axis, robot_color, robot_markersize,
                          robot_alpha, reference_color, reference_alpha, reference_marker, reference_markersize, obstacle_color, obstacle_edge_color, show_obs_name, travelled_path_color, travelled_path_linestyle, travelled_path_linewidth)
-        self.theta_pos_handle = self.ax.plot([], [], color=theta_pos_color, marker=theta_pos_marker, markersize=theta_pos_markersize)[0]
+        self.theta_pos_handle = self.ax.plot([], [], color=theta_pos_color, marker=theta_pos_marker, markersize=theta_pos_markersize, zorder=0)[0]
         self.pg_handle = self.ax.plot([], [], color=pg_color, marker=pg_marker, markersize=pg_markersize)[0]
         self.receding_path_handle = self.ax.plot([], [], color=receding_path_color, linestyle=receding_path_linestyle, linewidth=receding_path_linewidth, marker=receding_path_marker, zorder=0)[0]
-        self.mpc_path_handle = self.ax.plot([], [], color=mpc_path_color, linestyle=mpc_path_linestyle, linewidth=mpc_path_linewidth, zorder=0, dashes=(0.8, 0.8))[0]
-        self.s1_pos_handle = self.ax.plot([], [], color=s1_pos_color, marker=s1_pos_marker, markersize=s1_pos_markersize)[0]
+        self.mpc_path_handle = self.ax.plot([], [], color=mpc_path_color, linestyle=mpc_path_linestyle, linewidth=mpc_path_linewidth, zorder=0)[0]
+        self.s1_pos_handle = self.ax.plot([], [], color=s1_pos_color, marker=s1_pos_marker, markersize=s1_pos_markersize, zorder=0)[0]
         # Tunnel and base_solution for PFMPC_DS
         self.mpc_tunnel_handle = self.ax.plot([], [], color=mpc_tunnel_color, linestyle=mpc_tunnel_linestyle, linewidth=mpc_tunnel_linewidth, alpha=mpc_tunnel_alpha, zorder=0)[0]
         self.base_sol_path_handle = self.ax.plot([], [], color=base_sol_color, linestyle=base_sol_linestyle, linewidth=base_sol_linewidth, zorder=0, dashes=(0.8, 0.8))[0]
 
+        self.workspace_horizon_handle = self.ax.plot([], [], color=workspace_horizon_color, linestyle=workspace_horizon_linestyle, linewidth=workspace_horizon_linewidth)[0]
+
         # Artifical path for PFMPC_artificial
-        self.mpc_artificial_path_handle = self.ax.plot([], [], color=mpc_artificial_path_color, linestyle=mpc_artificial_path_linestyle, linewidth=mpc_artificial_path_linewidth, marker='o', zorder=4)[0]
+        self.mpc_artificial_path_handle = self.ax.plot([], [], color=mpc_artificial_path_color, linestyle=mpc_artificial_path_linestyle, linewidth=mpc_artificial_path_linewidth, zorder=4)[0]
 
         self.show_mpc_solution = show_mpc_solution
         self.show_mpc_cost = show_mpc_cost
@@ -244,7 +239,10 @@ class PFMPCGUI(SceneGUI):
             return
 
         if isinstance(controller, PFMPC_ds):
-            self.pg_handle.set_data(*controller.pg)
+            if controller.pg is None:
+                self.pg_handle.set_data([],[])
+            else:
+                self.pg_handle.set_data(*controller.pg)
             # Star environment
             [h.remove() for h in self.obstacle_star_handles if h is not None]
             self.obstacle_star_handles = []
@@ -255,13 +253,12 @@ class PFMPCGUI(SceneGUI):
                 lh, _ = controller.workspace_rho.draw(ax=self.ax, **self.workspace_rho_draw_options)
                 self.obstacle_star_handles += lh
             if controller.params['workspace_horizon'] > 0:
-                lh, _ = draw_shapely_polygon(shapely.geometry.Point(self.robot.h(robot_state)).buffer(controller.params['workspace_horizon']), ax=self.ax, fc='None', ec='r', linestyle='--')
-                self.obstacle_star_handles += lh
+                self.workspace_horizon_handle.set_data(*shapely.geometry.Point(self.robot.h(robot_state)).buffer(controller.params['workspace_horizon']).exterior.xy)
 
-            if controller.mode == ControlMode.SBC:
-                self.fig.set_facecolor('red')
+            if self.indicate_sbc and controller.mode == ControlMode.SBC:
+                self.robot_handles[0].set_color(self.sbc_color)
             else:
-                self.fig.set_facecolor('white')
+                self.robot_handles[0].set_color(self.robot_color)
 
             # SBC base solution
             if controller.sol_feasible:
@@ -314,8 +311,8 @@ class PFMPCGUI(SceneGUI):
 
 
         if self.show_u_history:
-            self.u_infeasible += u.tolist() if not controller.sol_feasible else [None] * self.robot.nu
-            self.u_history += u.tolist()
+            self.u_infeasible += u if not controller.sol_feasible else [None] * self.robot.nu
+            self.u_history += u
             for i in range(self.robot.nu):
                 if len(self.u_history) > 2:
                     N = len(self.u_history) // self.robot.nu

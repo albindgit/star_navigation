@@ -1,12 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from config.load_config import load_config
-# from videos.video_writer import VideoWriter
-from motion_control.soads import SoadsController
 from config.load_config import load_config
 from motion_control.soads import draw_vector_field, compute_weights
-
-make_video = 0
 
 ctrl_param_file = 'soads_ctrl_params.yaml'
 scene, robot, controller, x0 = load_config(ctrl_param_file=ctrl_param_file, robot_type_id=0, verbosity=3)
@@ -26,13 +21,6 @@ converged = False
 paused = True
 step_once = False
 i = 0
-
-# Init video writing
-if make_video:
-    video_name = "mpc_" + str(scene.id) + "_" + robot.__class__.__name__
-    video_name = input("Video file name: ")
-    video_writer = VideoWriter(video_name)
-    paused = False
 
 # Init plotting
 fig_scene, ax_scene = plt.subplots()
@@ -153,33 +141,19 @@ while fig_open and not converged:
 
         i += 1
 
-        if make_video:
-            video_writer.add_frame(fig_scene)
-            if not i % 10:
-                print(f'[VideoWriter] wrote frame {i}/{K}')
-        else:
-            fig_scene.canvas.draw()
+        fig_scene.canvas.draw()
 
     converged = np.linalg.norm(robot.h(x[:, i])-pg) < convergence_threshold
 
     if i == K or converged:
-        if make_video:
-            # close video writer
-            video_writer.release()
-            print("Finished")
-            fig_open = False
-        else:
-            ax_scene.set_title("Time: {:.1f} s. Finished".format(i * dt))
-            fig_scene.canvas.draw()
+        ax_scene.set_title("Time: {:.1f} s. Finished".format(i * dt))
+        fig_scene.canvas.draw()
 
-    if not make_video:
-        plt.pause(0.005)
+    plt.pause(0.005)
 
 
 ot = timing_history['obstacle']
 print("Timing\n-----\nMean: {:.2f}\nMax: {:.2f}\nStdDev: {:.2f}".format(np.mean(ot), np.max(ot), np.std(ot)))
 
 # Wait until figure closed when converged
-# if fig_open:
-if not make_video:
-    plt.show()
+plt.show()

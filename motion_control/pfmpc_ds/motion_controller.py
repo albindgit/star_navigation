@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 from motion_control.pfmpc_ds import workspace_modification, path_generator, Mpc, pol2pos, rho_environment, extract_r0
 from starworlds.utils.misc import tic, toc
 from starworlds.obstacles import Ellipse, StarshapedPolygon, motion_model
@@ -172,29 +174,76 @@ class MotionController:
             # r_kappa = self.ref_kappa(self.robot.h(x), self.rhrp_path[0, :],
             #                          pol2pos(self.path_pol, self.lam_rho, self.mpc.build_params['n_pol']), self.rho)
             r_kappa = self.rhrp_path[0, :]
-            return self.unicycle_sbc(x, r_kappa)
+            if self.robot.__class__.__name__ == 'Unicycle':
+                return self.unicycle_sbc(x, r_kappa)
+            elif self.robot.__class__.__name__ == 'Omnidirectional':
+                k = 100
+                u = [k*(r_kappa[0]-x[0]), k*(r_kappa[1]-x[1])]
+                for i in range(2):
+                    scale = 1
+                    if u[i] > self.robot.u_max[i]:
+                        scale = self.robot.u_max[i] / u[i]
+                    elif u[i] < self.robot.u_min[i]:
+                        scale = self.robot.u_min[i] / u[i]
+                    u = [scale * u[0], scale * u[1]]
+                #
+                # u0_sig = u[0] / self.robot.u_max[0]
+                # u1_sig = u[1] / self.robot.u_max[1]
+                # sig = max(u0_sig, u1_sig, 1)
+                # if sig > 1:
+                #     if u0_sig > u1_sig:
+                #         u[0] = self.robot.u_max[0]
+                #         u[1] /= sig
+                #     else:
+                #         u[0] /= sig
+                #         u[1] = self.robot.u_max[1]
+                return u
+            else:
+                print("No SBC for this robot model!!!!")
 
     def update_policy(self, x, obstacles, workspace=None):
         if workspace is None:
             workspace = Ellipse([1.e10, 1.e10])
         p = self.robot.h(x)
 
-        # if self.params['workspace_horizon'] > 0:
-        #     workspace_horizon_region = shapely.geometry.Point(p).buffer(self.params['workspace_horizon'])
-        #     workspace = StarshapedPolygon(workspace_horizon_region.intersection(workspace.polygon()))
-        # obstacles_filtered = []
-        # for o in obstacles:
-        #     if workspace.polygon().intersects(o.polygon()):
-        #         obstacles_filtered += [o]
-        # obstacles = obstacles_filtered
+        obstacles_local = obstacles.copy()
+        # Adjust for robot radius
+        if self.robot.radius > 0:
+            obstacles_local, workspace, _, _ = rho_environment(workspace, obstacles_local, self.robot.radius)
+
+        # Adjust for moving obstacles
+        if self.params['velocity_obstacle']:
+            for i, o in enumerate(obstacles_local):
+                if not (o._motion_model is None or o._motion_model.__class__.__name__ == "Static"):
+                    o_pol = o.polygon()
+                    xvel, yvel = o._motion_model.lin_vel()
+                    dil = StarshapedPolygon(shapely.MultiPolygon([o_pol, shapely.affinity.translate(o_pol, xoff=xvel*self.params['dt'], yoff=yvel*self.params['dt'])]).convex_hull)
+                    # dil = o.dilated_obstacle(padding=max(abs(o._motion_model.lin_vel())) * self.params['dt'], id="duplicate")
+                    if dil.polygon().distance(shapely.geometry.Point(p)) > max(abs(o._motion_model.lin_vel()))*self.params['dt']:
+                        obstacles_local[i] = dil
+                    else:
+                        print("Not dillated obstacle.")
+                    # dil = o.dilated_obstacle(padding=max(abs(o._motion_model.lin_vel())) * self.params['dt'], id="duplicate")
+                    # _, ax = o.draw()
+                    # ax.set_xlim([-1, 12])
+                    # ax.set_ylim([-8, 4])
+                    # obstacles_local[i].draw(ax=ax, fc='r', alpha=0.4, zorder=-2)
+                    # dil.draw(ax=ax, fc='b', alpha=0.4, zorder=-3)
+                    # plt.show()
 
         if self.params['workspace_horizon'] > 0:
             obstacle_detection_region = shapely.geometry.Point(p).buffer(self.params['workspace_horizon'])
             obstacles_filtered = []
-            for o in obstacles:
+            for o in obstacles_local:
                 if obstacle_detection_region.intersects(o.polygon()):
                     obstacles_filtered += [o]
-            obstacles = obstacles_filtered
+            obstacles_local = obstacles_filtered
+        else:
+            obstacles_filtered = []
+            for o in obstacles_local:
+                if workspace.polygon().intersects(o.polygon()):
+                    obstacles_filtered += [o]
+            obstacles_local = obstacles_filtered
 
         # Initialize rs to robot position
         if self.r_plus is None:
@@ -220,7 +269,7 @@ class MotionController:
             if self.theta_g > 0:
                 # Extract receding path from global target path
                 t0 = tic()
-                obstacles_rho, workspace_rho, free_rho_sh, obstacles_rho_sh = rho_environment(workspace, obstacles, self.rho)
+                obstacles_rho, workspace_rho, free_rho_sh, obstacles_rho_sh = rho_environment(workspace, obstacles_local, self.rho)
                 self.timing['workspace'] = toc(t0)
 
                 t0 = tic()
@@ -235,14 +284,13 @@ class MotionController:
                     self.workspace_rho = workspace_rho
                     self.obstacles_star = []
                     self.obstacle_clusters = None
-                    # self.pg = self.rhrp_path[-1, :]
+                    self.pg = self.rhrp_path[-1, :]
                     rhrp_path_length = self.rhrp_L
                 self.timing['target'] = toc(t0)
 
             if ds_path_generation:
                 # Find attractor for DS dynamics
                 if self.theta_g == 0:
-                    pass
                     self.pg = np.array(self.reference_path.coords[0])
                 else:
                     t0 = tic()
@@ -253,7 +301,7 @@ class MotionController:
                             self.theta = theta
                             break
                     self.pg = np.array(self.reference_path.interpolate(self.theta).coords[0])
-
+                    print(self.theta_g, theta, self.reference_path.interpolate(theta).within(free_rho_sh))
                     self.timing['workspace'] += toc(t0)
 
                 pg_buffer_thresh = 0.5
@@ -271,7 +319,7 @@ class MotionController:
 
                 self.rhrp_path, rhrp_path_length, self.obstacle_clusters, self.obstacles_rho, self.workspace_rho, \
                 self.obstacles_star, self.rho, self.rg, workspace_exitflag, workspace_timing, target_timing, self.timing['workspace_detailed'] = \
-                    ds_path_gen(obstacles, workspace, p, self.pg, self.r_plus, self.params['rho0'], self.params['hull_epsilon'], self.rhrp_s,
+                    ds_path_gen(obstacles_local, workspace, p, self.pg, self.r_plus, self.params['rho0'], self.params['hull_epsilon'], self.rhrp_s,
                                 self.obstacle_clusters, buffer_path, local_pars, self.verbosity)
 
                 # Update O+
@@ -306,15 +354,15 @@ class MotionController:
             e_max = self.rho - self.epsilon
             solution_data = self.mpc.run(x.tolist(), self.u_prev, self.path_pol, self.params, e_max, self.lam_rho, self.solution, verbosity=self.verbosity)
             if solution_data is None:
-                self.solution, self.mpc_exit_status = self.base_solution(x.tolist(), self.path_pol, self.lam_rho), "BaseSolution"
+                self.solution, self.mpc_exit_status, self.sol_feasible = None, "BaseSolution", False
             else:
                 self.solution, self.mpc_exit_status = solution_data.solution, solution_data.exit_status
-            self.sol_feasible = self.mpc.is_feasible(self.solution, x.tolist(), self.path_pol, e_max, self.lam_rho, d=self.verbosity > 0)
+                self.sol_feasible = self.mpc.is_feasible(self.solution, x.tolist(), self.path_pol, e_max, self.lam_rho, d=self.verbosity > 0)
             # self.solution, self.sol_feasible, self.mpc_exit_status = self.mpc.run(x.tolist(), self.u_prev, self.path_pol, self.params,
             #                                                e_max, self.lam_rho, verbosity=self.verbosity)
             self.timing['mpc'] = toc(t0)
 
-            if rhrp_path_length > 0.1 * self.rhrp_L and self.sol_feasible:
+            if (np.linalg.norm(self.rhrp_path[-1, :]-self.pg) <= 0.1 * self.rhrp_L or rhrp_path_length > 0.1 * self.rhrp_L) and self.sol_feasible:
                 self.mode = ControlMode.MPC
             else:
                 if self.verbosity > 0:

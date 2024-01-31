@@ -211,8 +211,8 @@ def scene_config(id=None):
             StarshapedPolygon([(0, 1.2), (2.5, 1.2), (2.5, 2), (0, 2)], is_convex=True),
             StarshapedPolygon([(0, 0), (2.5, 0), (2.5, 0.8), (0, 0.8)], is_convex=True),
             StarshapedPolygon([(2, 0), (2.5, 0), (2.5, 2), (2, 2)], is_convex=True),
-            Ellipse([0.5, 2], motion_model=motion_model.Static([2, 9], rot=np.pi/4)),
-            Ellipse([0.5, 2], motion_model=motion_model.Static([2, 7], rot=-np.pi/4)),
+            Ellipse([0.5, 2], n_pol=100, motion_model=motion_model.Static([2, 9], rot=np.pi/4)),
+            Ellipse([0.5, 2], n_pol=100, motion_model=motion_model.Static([2, 7], rot=-np.pi/4)),
             Ellipse(ell_ax, motion_model=motion_model.Static([0.5, 6.5])),
             Ellipse(ell_ax, motion_model=motion_model.Static([6.5, 7.5])),
             Ellipse(ell_ax, motion_model=motion_model.Static([6.5, 1])),
@@ -331,7 +331,7 @@ def scene_config(id=None):
     scene_id += 1
     scene_description[scene_id] = 'Dynamic crowd. Single attractor.'
     if id == scene_id:
-        mean_vel = 0.
+        mean_vel = 0.2
         obstacles = [
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[3, 5], x2_mag=-(mean_vel+0.2))),
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[2, 4], x2_mag=-(mean_vel+0.1))),
@@ -347,12 +347,9 @@ def scene_config(id=None):
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[0.5, 7], x2_mag=-(mean_vel+0.2))),
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[0.5, 10], x2_mag=-(mean_vel+0.1))),
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[-1, 11], x2_mag=-(mean_vel+0.2))),
-
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[0.5, 2], x2_mag=-(mean_vel+0.4))),
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[-0.5, 3], x2_mag=-(mean_vel+0.3))),
-
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[-1, 5], x2_mag=-(mean_vel+0.1))),
-
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[-2.4, 7], x2_mag=-(mean_vel+0.2))),
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[-1.5, 8], x2_mag=-(mean_vel+0.3))),
             Ellipse([0.5, 0.5], motion_model=motion_model.SinusVelocity(pos=[-3, 5], x2_mag=-(mean_vel+0.1))),
@@ -497,9 +494,9 @@ def scene_config(id=None):
             Ellipse([1, 1], motion_model=zig_zag_motion_model([-4, 3.6], [4, 3.6], [-4, 3.6], 0.2)),
             Ellipse([.5, .5], motion_model=zig_zag_motion_model([-0.5, 4.5], [-4, 4.5], [3, 4.5], 0.2)),
             # Ellipse([.5, .5], motion_model=zig_zag_motion_model([3, -6], [-3, -10], [3, -6], 0.2)),
-            StarshapedPolygon([[-3, -2], [-2, -2], [-2, 1], [-3, 1]]),
+            # StarshapedPolygon([[-3, -2], [-2, -2], [-2, 1], [-3, 1]]),
         ]
-        obstacles_to_plot = obstacles[:-1]
+        # obstacles_to_plot = obstacles[:-1]
         # reference_path = [[9, 4.5], [0.5, 4.5], [0.5, 5.5]]
         # self.p0 = np.array(self.reference_path[0])
         theta0 = np.pi
@@ -507,6 +504,163 @@ def scene_config(id=None):
         reference_path = [p0.tolist()] + ws_attractors
         xlim = [-8, 8]
         ylim = [-9, 7]
+
+    # ----------------------------------- #
+    scene_id += 1
+    scene_description[scene_id] = 'Enclosed corridor.'
+    if id == scene_id:
+        workspace = StarshapedPolygon([[1, 3], [9, 3], [9, 8], [1, 8]])
+        obstacles = [
+            # StarshapedPolygon([[2, 5], [8, 5], [8, 6], [2, 6]]),
+            # StarshapedPolygon([[2, 2], [8, 2], [8, 3], [2, 3]]),
+            # StarshapedPolygon([[2, 8], [8, 8], [8, 9], [2, 9]]),
+            # Ellipse([1.1, 1.1], motion_model=motion_model.Interval([-2, 4], [(13, (10, 4))])),
+            StarshapedPolygon([[3, 4], [8, 4], [8, 5.5], [3, 5.5]]),
+            Ellipse([0.5, 0.5], n_pol=80, motion_model=motion_model.Interval([2, 3.5], [(20, (10, 3.5))])),
+            Ellipse([0.5, 0.5], n_pol=80, motion_model=zig_zag_motion_model([6, 6.6], [6, 7.4], [6, 6.], 0.3)),
+        ]
+
+        # reference_path = [[9, 4.5], [0.5, 4.5], [0.5, 5.5]]
+        # self.p0 = np.array(self.reference_path[0])
+        reference_path = [[2, 5.5]]
+        reference_path = [[2.5, 5]]
+        theta0 = np.pi / 1.2
+        p0 = np.array([7, 3.4])
+        xlim = [0.5, 9.5]
+        ylim = [2.5, 8.5]
+
+    # ----------------------------------- #
+    scene_id += 1
+    scene_description[scene_id] = 'DSW example.'
+    if id == scene_id:
+        workspace = StarshapedPolygon([[0, 0], [17, 0], [17, 8], [11, 8], [11, 12], [5, 12], [5, 8], [0, 8]])
+        obstacles = [
+            # StarshapedPolygon([[2, 5], [8, 5], [8, 6], [2, 6]]),
+            # StarshapedPolygon([[2, 2], [8, 2], [8, 3], [2, 3]]),
+            # StarshapedPolygon([[2, 8], [8, 8], [8, 9], [2, 9]]),
+            # Ellipse([1.1, 1.1], motion_model=motion_model.Interval([-2, 4], [(13, (10, 4))])),
+            StarshapedPolygon([[7, 9], [12, 9], [12, 10], [7, 10]]),
+            StarshapedPolygon([[13, 3], [14, 3], [14, 7], [11, 7], [11, 6], [13, 6]]),
+            StarshapedPolygon([[4, -1], [8, -1], [8, 2], [6.5, 2], [6.5, 0.5], [4, 0.5]]),
+            StarshapedPolygon([[12, -1], [15, -1], [15, 1], [12, 1]]),
+            Ellipse([0.5, 1], motion_model=motion_model.Static([1.5, 2])),
+            Ellipse([1, 1], motion_model=motion_model.Static([7, 7])),
+            Ellipse([0.7, 1.2], motion_model=motion_model.Static([10, 1.5], np.pi/4)),
+            Ellipse([0.7, 1.2], motion_model=motion_model.Static([10, 2.5], -np.pi/4)),
+            StarshapedPolygon([[3, 2.5], [4, 2.5], [4, 6.5], [3, 6.5]]),
+            StarshapedPolygon([[3, 4], [9, 4], [9, 5], [3, 5]]),
+        ]
+        obstacles_to_plot = (obstacles[:-4] +
+                             [StarshapedPolygon(shapely.ops.unary_union([o.polygon() for o in obstacles[-4:-2]]))] +
+                             [StarshapedPolygon(shapely.ops.unary_union([o.polygon() for o in obstacles[-2:]]))])
+
+        # reference_path = [[9, 4.5], [0.5, 4.5], [0.5, 5.5]]
+        # self.p0 = np.array(self.reference_path[0])
+        reference_path = [[2, 5.5]]
+        reference_path = [[9, 11]]
+        theta0 = np.pi/2
+        p0 = np.array([16, 2])
+        # p0 = np.array([9, 8])
+        xlim = [-1.5, 17.5]
+        ylim = [-1.5, 12.5]
+
+
+    # ----------------------------------- #
+    scene_id += 1
+    scene_description[scene_id] = 'Illustration of ModEnv changing obstacles.'
+    if id == scene_id:
+        obstacles = [
+            StarshapedPolygon([[0, 0], [3, 0], [3, 3], [2, 3], [2, 1], [0, 1]]),
+            StarshapedPolygon([[0, 0], [1, 0], [1, 3], [0, 3]]),
+            Ellipse([0.5, 1], motion_model=motion_model.Static([3, -.5], 0 * np.pi / 2)),
+            Ellipse([.7, .7], motion_model=motion_model.Static([0, 3.2]))
+        ]
+        obstacles_to_plot = [Polygon(shapely.ops.unary_union([o.polygon() for o in obstacles[:2]]))] + obstacles[2:]
+        reference_path = [[1.5, 1.6]]
+        theta0 = 0
+        p0 = np.array([0, -1])
+        xlim = [-1.5, 4]
+        ylim = [-2, 4.5]
+
+
+    # ----------------------------------- #
+    scene_id += 1
+    scene_description[scene_id] = 'Dynamic crowd 2. Single attractor.'
+    if id == scene_id:
+        mean_vel = 0.3
+        obstacles = [
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[3, 5], x2_mag=-(mean_vel+0.2))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[2, 4], x2_mag=-(mean_vel+0.1))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[2, 9], x2_mag=-(mean_vel+0.3))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[0, 6], x2_mag=-(mean_vel+0.1))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-4, 4], x2_mag=-(mean_vel+0.3))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[0, 2], x2_mag=-(mean_vel+0.1))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-1.5, 3], x2_mag=-(mean_vel+0.2))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-1.5, 10], x2_mag=-(mean_vel+0.2))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-1.3, -1], x2_mag=-(mean_vel+0.3))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[2, 0], x2_mag=-(mean_vel+0.1))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[0.5, 9], x2_mag=-(mean_vel+0.1))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-3, 7], x2_mag=-(mean_vel+0.2))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-0.5, 12], x2_mag=-(mean_vel+0.1))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-4, 12], x2_mag=-(mean_vel+0.2))),
+            Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[3, 13], x2_mag=-(mean_vel+0.1))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-1, 11], x2_mag=-(mean_vel+0.2))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[0.5, 2], x2_mag=-(mean_vel+0.4))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-0.5, 3], x2_mag=-(mean_vel+0.3))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-1, 5], x2_mag=-(mean_vel+0.1))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-2.4, 7], x2_mag=-(mean_vel+0.2))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-1.5, 8], x2_mag=-(mean_vel+0.3))),
+            # Ellipse([1, 1], motion_model=motion_model.SinusVelocity(pos=[-3, 5], x2_mag=-(mean_vel+0.1))),
+        ]
+        # reference_path = [[6 * np.cos(2 * np.pi / 90 * s),
+        #                    3 * np.sin(4 * np.pi / 90 * s)]
+        #                   for s in range(8 * 90)]
+        # p0 = np.array(reference_path[0])
+        # theta0 = np.arctan2(reference_path[1][1] - reference_path[0][1],
+        #                     reference_path[1][0] - reference_path[0][0])
+        reference_path = [[0, 10.]]
+        p0 = np.array([-4., -5.])
+        # reference_path = [p0.tolist()] + reference_path
+        theta0 = np.pi / 2
+        xlim = [-8, 8]
+        ylim = [-6, 12]
+
+    # ----------------------------------- #
+    scene_id += 1
+    scene_description[scene_id] = 'MPC steps illustration.'
+    if id == scene_id:
+        workspace = StarshapedPolygon([[0, 0], [17, 0], [17, 8], [11, 8], [11, 12], [5, 12], [5, 8], [0, 8]])
+        obstacles = [
+            # StarshapedPolygon([[2, 5], [8, 5], [8, 6], [2, 6]]),
+            # StarshapedPolygon([[2, 2], [8, 2], [8, 3], [2, 3]]),
+            # StarshapedPolygon([[2, 8], [8, 8], [8, 9], [2, 9]]),
+            # Ellipse([1.1, 1.1], motion_model=motion_model.Interval([-2, 4], [(13, (10, 4))])),
+            # StarshapedPolygon([[7, 9], [12, 9], [12, 10], [7, 10]]),
+            # StarshapedPolygon([[4, -1], [8, -1], [8, 2], [6.5, 2], [6.5, 0.5], [4, 0.5]]),
+            # StarshapedPolygon([[12, -1], [15, -1], [15, 1], [12, 1]]),
+            Ellipse([0.5, 1], motion_model=motion_model.Static([1.5, 2])),
+            Ellipse([1, 1], motion_model=motion_model.Static([7, 7])),
+            Ellipse([0.7, 1.2], motion_model=motion_model.Static([10, 1.5], np.pi / 4)),
+            Ellipse([0.7, 1.2], motion_model=motion_model.Static([10, 2.5], -np.pi / 4)),
+            StarshapedPolygon([[3, 2.5], [4, 2.5], [4, 6.5], [3, 6.5]]),
+            StarshapedPolygon([[3, 4], [9, 4], [9, 5], [3, 5]]),
+            StarshapedPolygon([[13, 3], [14, 3], [14, 7], [13, 7]]),
+            StarshapedPolygon([[13, 7], [16, 7], [16, 6], [13, 6]]),
+            StarshapedPolygon([[13, 4], [16, 4], [16, 3], [13, 3]])
+        ]
+        obstacles_to_plot = (obstacles[:-5] +
+                             [StarshapedPolygon(shapely.ops.unary_union([o.polygon() for o in obstacles[-5:-3]]))] +
+                             [Polygon(shapely.ops.unary_union([o.polygon() for o in obstacles[-3:]]))])
+
+        # reference_path = [[9, 4.5], [0.5, 4.5], [0.5, 5.5]]
+        # self.p0 = np.array(self.reference_path[0])
+        reference_path = [[2, 5.5]]
+        reference_path = [[9, 11]]
+        theta0 = np.pi / 2 * 0.2
+        p0 = np.array([14.5, 5])
+        # p0 = np.array([9, 8])
+        xlim = [-1.5, 17.5]
+        ylim = [-1.5, 12.5]
 
     while id is None or not (1 <= id <= scene_id):
         print("Select scene ID\n -------------")
@@ -523,7 +677,7 @@ def scene_config(id=None):
 
     if obstacles_to_plot is None:
         obstacles_to_plot = obstacles
-    return p0, theta0, reference_path, ws_attractors, obstacles, workspace, obstacles_to_plot, xlim, ylim
+    return p0, theta0, reference_path, ws_attractors, obstacles, workspace, obstacles_to_plot, xlim, ylim, id
 
 
 #
@@ -535,14 +689,14 @@ class Scene:
     def __init__(self, id=None, robot_radius=0.):
         self.id = id
         self.p0, self.theta0, self.reference_path, self.ws_attractors, self.obstacles, self.workspace, \
-        self._obstacles_to_plot, self.xlim, self.ylim = scene_config(id)
+        self._obstacles_to_plot, self.xlim, self.ylim, self.id = scene_config(id)
         # Compute all polygon
         [o.polygon() for o in self.obstacles]
         [o.kernel() for o in self.obstacles]
         [o.is_convex() for o in self.obstacles]
         self.robot_radius = robot_radius
-        # self._obstacles_to_plot = [o.dilated_obstacle(padding=-robot_width/2, id="duplicate") for o in self._obstacles_to_plot]
-        self.obstacles = [o.dilated_obstacle(padding=robot_radius, id="duplicate") for o in self.obstacles]
+        # if robot_radius > 0:
+        #     self.obstacles = [o.dilated_obstacle(padding=robot_radius, id="duplicate") for o in self.obstacles]
         self._static_obstacle = [o._motion_model is None or o._motion_model.__class__.__name__ == "Static" for o in self.obstacles]
         self.is_static = all(self._static_obstacle)
 
@@ -555,8 +709,9 @@ class Scene:
             prev_pos, prev_rot = o.pos().copy(), o.rot()
             o.move(dt)
             # if not o.exterior_point(robot_pos):
-            if o.polygon().distance(shapely.geometry.Point(robot_pos)) < 1e-2:
-                # print("[Scene]: Obstacle " + str(o) + " stands still to avoid moving into robot.")
+            # NOTE: Not well implemented. E.g. with hardcoded dt
+            if o.polygon().distance(shapely.geometry.Point(robot_pos)) < max(abs(o._motion_model.lin_vel()))*0.2:
+                print("[Scene]: Obstacle " + str(o) + " stands still to avoid moving into robot.")
                 o._motion_model.set_pos(prev_pos)
                 o._motion_model.set_rot(prev_rot)
         for i in range(len(self.obstacles)):
@@ -572,6 +727,7 @@ class Scene:
             _, ax = plt.subplots(subplot_kw={'aspect': 'equal'})
         ax.set_xlim(self.xlim)
         ax.set_ylim(self.ylim)
+        ax.set_aspect('equal')
         line_handles = []
         if draw_p0:
             ax.plot(*self.p0, 'ks', markersize=10)

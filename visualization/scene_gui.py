@@ -8,6 +8,7 @@ from motion_control.pfmpc_obstacle_constraints import MotionController as PFMPC_
 from motion_control.pfmpc_artificial_reference import MotionController as PFMPC_artificial_reference
 from motion_control.pfmpc_artificial_reference import pol2pos
 from starworlds.utils.misc import draw_shapely_polygon
+from motion_control.soads import draw_vector_field
 
 
 class SceneGUI:
@@ -30,6 +31,7 @@ class SceneGUI:
         self.fig_open = True
         self.paused = True
         self.step_once = False
+        self.draw_vector_field = False
         self.fig.canvas.mpl_connect('close_event', self.on_close)
         self.fig.canvas.mpl_connect('key_press_event', self.on_press)
         # Memory
@@ -49,7 +51,6 @@ class SceneGUI:
             self.robot.update_plot(robot_state, self.robot_handles)
             self.travelled_path_handle.set_data(self.travelled_path[::2], self.travelled_path[1::2])
 
-
     def on_close(self, event):
         self.fig_open = False
 
@@ -59,15 +60,27 @@ class SceneGUI:
         elif event.key == 'right':
             self.step_once = True
             self.paused = True
+        # elif event.key == 'f':
+        #     if len(self.scene.reference_path) > 1:
+        #         print("Vector field is only shown for setpoint setup!")
+        #         return
+        #     self.paused = True
+        #     self.step_once = True
+        #     self.draw_vector_field = True
+        #     draw_vector_field(self.scene.reference_path, controller.obstacles_star, gui.ax, workspace=controller.workspace_rho, n=200,
+        #                       color='orange', zorder=-3)
         elif event.key == 'w':
             fig_name = input("Figure file name: ")
-            figures_path = pathlib.PurePath(__file__).parents[0].joinpath("figures")
-            title = self.ax.get_title()
-            self.ax.set_title("")
-            self.fig.savefig(str(figures_path.joinpath(fig_name + ".png")), bbox_inches='tight')
-            self.ax.set_title(title)
+            self.save_fig(fig_name)
         else:
             print(event.key)
+
+    def save_fig(self, name):
+        figures_path = pathlib.PurePath(__file__).parents[0].joinpath("figures")
+        title = self.ax.get_title()
+        self.ax.set_title("")
+        self.fig.savefig(str(figures_path.joinpath(name + ".png")), bbox_inches='tight')
+        self.ax.set_title(title)
 
 
 class StarobsGUI(SceneGUI):
@@ -135,7 +148,7 @@ class PFMPCGUI(SceneGUI):
                  mpc_artificial_path_color='y', mpc_artificial_path_linestyle='-.', mpc_artificial_path_linewidth=4,
                  mpc_tunnel_color='r', mpc_tunnel_linestyle='--', mpc_tunnel_linewidth=1, mpc_tunnel_alpha=1,
                  obstacles_star_color='b', obstacles_star_show_reference=False, obstacles_star_alpha=0.2,
-                 workspace_rho_color='None', workspace_rho_show_reference=False, workspace_rho_linestyle='--',
+                 workspace_rho_color='None', workspace_rho_show_reference=False, workspace_rho_alpha=0.2,
                  workspace_horizon_color='tab:blue', workspace_horizon_linestyle='--', workspace_horizon_linewidth=1,
                  show_u_history=False, u_history_color='k', u_history_marker='o',
                  show_mpc_solution=False, show_mpc_cost=False, controller=None,
@@ -148,8 +161,9 @@ class PFMPCGUI(SceneGUI):
         self.obstacle_star_handles = []
         self.obstacles_star_draw_options = {'fc': obstacles_star_color, 'show_reference': obstacles_star_show_reference,
                                             'alpha': obstacles_star_alpha, 'zorder': 0}
-        self.workspace_rho_draw_options = {'fc': 'None', 'ec': workspace_rho_color, 'show_reference': workspace_rho_show_reference,
-                                            'linestyle': workspace_rho_linestyle, 'zorder': -4}
+        self.workspace_rho_draw_options = {'ec': workspace_rho_color, 'fc': 'None', 'ls': '--',
+                                           'show_reference': workspace_rho_show_reference,
+                                           'alpha': workspace_rho_alpha, 'zorder': 0}
         super().__init__(robot, scene, xlim, ylim, show_axis, robot_color, robot_markersize,
                          robot_alpha, reference_color, reference_alpha, reference_marker, reference_markersize, obstacle_color, obstacle_edge_color, show_obs_name, travelled_path_color, travelled_path_linestyle, travelled_path_linewidth)
         self.theta_pos_handle = self.ax.plot([], [], color=theta_pos_color, marker=theta_pos_marker, markersize=theta_pos_markersize, zorder=0)[0]
@@ -250,6 +264,9 @@ class PFMPCGUI(SceneGUI):
                 lh, _ = o.draw(ax=self.ax, **self.obstacles_star_draw_options)
                 self.obstacle_star_handles += lh
             if self.scene.workspace is not None:
+                # lh, _ = workspace.draw(ax=self.ax, **self.workspace_rho_draw_options)
+                # self.obstacle_star_handles += lh
+                # lh, _ = controller.workspace_rho.draw(ax=self.ax, fc='w', zorder=-8, show_reference=0)
                 lh, _ = controller.workspace_rho.draw(ax=self.ax, **self.workspace_rho_draw_options)
                 self.obstacle_star_handles += lh
             if controller.params['workspace_horizon'] > 0:

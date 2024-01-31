@@ -38,7 +38,7 @@ def path_generator(r0, rg, obstacles, workspace, path_s, init_path=None, init_s=
                 print("[Path Generator]: Path converged. " + str(
                     int(100 * (s[i - 1] / L))) + "% of path completed.")
             break
-        if s[i - 1] >= L:
+        if s[i - 1] >= 0.5 * L:
             if verbosity > 2:
                 print("[Path Generator]: Completed path length. " + str(
                     int(100 * (s[i - 1] / L))) + "% of path completed.")
@@ -60,6 +60,7 @@ def path_generator(r0, rg, obstacles, workspace, path_s, init_path=None, init_s=
                                             reactivity=par['reactivity'], tail_effect=par['tail_effect'],
                                             convergence_tolerance=par['convergence_tolerance'])
         r[i, :] = r[i - 1, :] + dr * ds
+        ri_collision = False
 
         def collision_free(p):
             return all([o.exterior_point(p) for o in obstacles]) and workspace.interior_point(p)
@@ -72,24 +73,23 @@ def path_generator(r0, rg, obstacles, workspace, path_s, init_path=None, init_s=
                                                 reactivity=1, convergence_tolerance=par['convergence_tolerance'])
             r[i, :] = r[i - 1, :] + dr * ds
 
-        ri_collision = False
-        # while any([o.interior_point(r[i, :]) for o in obstacles]):
-        while not collision_free(r[i, :]):
-            if verbosity > 2:
-                print("[Path Generator]: Path inside obstacle. Reducing integration step from {:5f} to {:5f}.".format(ds, ds*par['ds_decay_rate']))
-            ds *= par['ds_decay_rate']
-            r[i, :] = r[i - 1, :] + dr * ds
-            # if ds < 0.01:
-            #     import matplotlib.pyplot as plt
-            #     plt.gca().quiver(*r[i-1, :], *dr, color='g')
-            #     for o in obstacles:
-            #         plt.gca().quiver(*o.boundary_mapping(r[i-1, :]), *o.normal(r[i-1, :]))
-            #     plt.show()
+            # while any([o.interior_point(r[i, :]) for o in obstacles]):
+            while not collision_free(r[i, :]):
+                if verbosity > 2:
+                    print("[Path Generator]: Path inside obstacle. Reducing integration step from {:5f} to {:5f}.".format(ds, ds*par['ds_decay_rate']))
+                ds *= par['ds_decay_rate']
+                r[i, :] = r[i - 1, :] + dr * ds
+                # if ds < 0.01:
+                #     import matplotlib.pyplot as plt
+                #     plt.gca().quiver(*r[i-1, :], *dr, color='g')
+                #     for o in obstacles:
+                #         plt.gca().quiver(*o.boundary_mapping(r[i-1, :]), *o.normal(r[i-1, :]))
+                #     plt.show()
 
-            # Additional compute time check
-            if toc(t0) > par['max_rhrp_compute_time']:
-                ri_collision = True
-                break
+                # Additional compute time check
+                if toc(t0) > par['max_rhrp_compute_time']:
+                    ri_collision = True
+                    break
         if ri_collision:
             continue
 

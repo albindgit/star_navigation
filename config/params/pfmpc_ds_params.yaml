@@ -5,23 +5,24 @@ pfmpc_ds:
   gamma: 0.9
   make_convex: 1
   iterative_rho_reduction: 0
-  max_obs_compute_time: 1000
-  hull_epsilon: 0.1
+  max_obs_compute_time: 100
+  hull_epsilon: 0.2
   use_prev_workspace: 1
   workspace_horizon: 0
+  velocity_obstacle: 1
   # Target generation
-  convergence_tolerance: 1.e-3
-  max_rhrp_compute_time: 100
-  crep: 1.5
-  reactivity: 1.0
+  convergence_tolerance: 0.1
+  max_rhrp_compute_time: 46
+  crep: 1.2
+  reactivity: 1.
   buffer: 1
   rhrp_steps: 12
   nominal_rhrp_horizon: 2
   # MPC
   ce: 1
   cs: 1.
-  R: [0.2, 0.1]
-  DR: [0.01, 0.]
+  R: [0.1, 0.1]
+  DR: [0.1, 0.]
   convergence_margin: 0.02
   lambda: 0.5
 

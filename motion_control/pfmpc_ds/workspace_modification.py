@@ -60,6 +60,7 @@ def workspace_modification(obstacles, workspace, p, pg, r_plus, rho0, hull_epsil
         if par['iterative_rho_reduction'] or rho < rho0:
             rho *= par['gamma']
         else:
+            print(min([o.polygon().distance(p_sh) for o in obstacles] + [workspace_rho.polygon().exterior.distance(p_sh)]))
             obstacles_dist = min([o.polygon().distance(p_sh) for o in obstacles] + [workspace_rho.polygon().exterior.distance(p_sh)])
             rho = 0.8 * obstacles_dist
         obstacles_rho, workspace_rho, free_rho_sh, obstacles_rho_sh = rho_environment(workspace, obstacles, rho)

@@ -7,12 +7,12 @@ import shapely
 
 # ------------------------------- #
 
-make_video = 1
+make_video = 0
 
 # Scenario settings
 ctrl_param_file = 'pfmpc_ds_params.yaml'
-robot_type_id = 3
-scene_id = 12
+robot_type_id = 1
+scene_id = 22
 verbosity = 0
 
 # Simulation settings
@@ -21,7 +21,7 @@ dt = 0.01
 dt_gui = 0.1
 
 # GUI settings
-gui_robot_idx = 4  # GUI environment is shown for robot corresponding to this x0 idx
+gui_robot_idx = 3  # GUI environment is shown for robot corresponding to this x0 idx
 show_mpc_tunnel = 0  # 0: Don't show.  1: Show for gui robot.  2: Show for all robots.
 show_mpc_sol = 0  # 0: Don't show.  1: Show for gui robot.  2: Show for all robots.
 show_travelled_path = 2  # 0: Don't show.  1: Show for gui robot.  2: Show for all robots.
@@ -39,8 +39,12 @@ rhrp_color, rhrp_linestyle, rhrp_linewidth = 'g', '-', 2
 scene_x0_mapping = {8: [[6, 0, np.pi/2], [3, 0, np.pi/2], [8, 0, np.pi/2], [4, -2, np.pi/2], [8, 2, np.pi/2]],
                     10: [[-2.5, 1.5, 0.], [2.4, -5.6, 0.], [3, .5, 0.], [2, 2.5, 0.], [-5, 1.5, 0.], [-2.8, -3.8, 0.]],
                     12: [[-1, 5, 0], [-4, -5.7, 0], [7, 0.25, 0], [1.2, 1.2, 0], [-3, 3, 0], [3.5, 3.5, 0]],
-                    13: [[0, -5, np.pi/2], [-2, -5, np.pi/2], [2, -5, np.pi/2], [-4, -5, np.pi/2], [4, -5, np.pi/2]]}
+                    13: [[0, -5, np.pi/2], [-2, -5, np.pi/2], [2, -5, np.pi/2], [-4, -5, np.pi/2], [4, -5, np.pi/2]],
+                    22: [[0, -5, np.pi/2], [-2, -5, np.pi/2], [2, -5, np.pi/2], [-4, -5, np.pi/2], [4, -5, np.pi/2]]}
 x0s = np.array(scene_x0_mapping[scene_id])
+
+if robot_type_id == 0:
+    x0s = x0s[:, :2]
 
 N = x0s.shape[0]
 
@@ -61,11 +65,11 @@ if show_travelled_path == 0:
     travelled_path_color = 'None'
 gui = PFMPCGUI(robot, scenes[gui_robot_idx], x0s[gui_robot_idx], scenes[gui_robot_idx].xlim, scenes[gui_robot_idx].ylim,
                controller=controllers[gui_robot_idx], robot_alpha=1., robot_color=gui_robot_color, robot_markersize=10,
-               reference_color='c', reference_marker='*', reference_markersize=10,
-               pg_color='g', pg_markersize=10, pg_marker='*',
+               reference_color='y', reference_marker='*', reference_markersize=10,
+               pg_color='y', pg_markersize=10, pg_marker='*',
                theta_pos_color='c', theta_pos_marker='o', theta_pos_markersize=2,
                obstacles_star_alpha=0.2, obstacles_star_show_reference=0, obstacles_star_color='b',
-               workspace_rho_color='None', indicate_sbc=0,
+               workspace_rho_color='b', workspace_rho_alpha=0.2, indicate_sbc=0,
                s1_pos_color='None',
                mpc_path_color=mpc_sol_color, mpc_path_linestyle=mpc_sol_linestyle, mpc_path_linewidth=mpc_sol_linewidth,
                mpc_tunnel_color=mpc_tunnel_color, mpc_tunnel_linestyle=mpc_tunnel_linestyle, mpc_tunnel_linewidth=mpc_tunnel_linewidth,
@@ -77,7 +81,7 @@ gui = PFMPCGUI(robot, scenes[gui_robot_idx], x0s[gui_robot_idx], scenes[gui_robo
 for i in range(N):
     if i == gui_robot_idx:
         continue
-    scenes[i], _, controllers[i], _ = load_config(ctrl_param_file=ctrl_param_file, robot_type_id=3, scene_id=scene_id, verbosity=verbosity)
+    scenes[i], _, controllers[i], _ = load_config(ctrl_param_file=ctrl_param_file, robot_type_id=robot_type_id, scene_id=scene_id, verbosity=verbosity)
     robot_handles[i], _ = robot.draw(x0s[i, :], ax=gui.ax, markersize=10, color=robot_color, alpha=1)
     travelled_path_handles[i] = gui.ax.plot([], [], c=travelled_path_color, ls=travelled_path_linestyle, lw=travelled_path_linewidth, zorder=0)[0]
 
@@ -96,6 +100,7 @@ if make_video:
     video_name = input("Video file name: ")
     video_writer = VideoWriter(video_name, 1/dt_gui)
     gui.paused = False
+    frame_cntr = 0
 else:
     # Init gui plot
     gui.update(xs[gui_robot_idx, :], k*dt)
@@ -147,7 +152,8 @@ while gui.fig_open and k*dt <= T_max and not all(converged) and not collision:
                     tmp_hs += gui.ax.plot(*mpc_path.T, c=mpc_sol_color, ls=mpc_sol_linestyle, lw=mpc_sol_linewidth)
 
         if make_video:
-            video_writer.add_frame(gui.fig)
+            video_writer.add_frame(gui.fig, frame_cntr)
+            frame_cntr += 1
             print("[VideoWriter] wrote frame at time {:.2f}/{:.2f}".format(k * dt, T_max))
         else:
             plt.pause(0.005)

@@ -154,6 +154,8 @@ while fig_open and not converged:
 
 ot = timing_history['obstacle']
 print("Timing\n-----\nMean: {:.2f}\nMax: {:.2f}\nStdDev: {:.2f}".format(np.mean(ot), np.max(ot), np.std(ot)))
+plt.figure()
+plt.plot(ot)
 
 # Wait until figure closed when converged
 plt.show()

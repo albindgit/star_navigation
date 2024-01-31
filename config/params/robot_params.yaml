@@ -13,8 +13,8 @@ Unicycle_forward:
 
 Unicycle_path_following_paper:
   model: 'Unicycle'
-  radius: 0.5
-  lin_vel_min: 0.
+  radius: 0.
+  lin_vel_min: -0.1
   lin_vel_max: 1
   ang_vel_max: 1
 

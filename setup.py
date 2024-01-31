@@ -11,6 +11,9 @@ setup(name='star_navigation',
           'shapely',
           'casadi',
           'opengen',
-          'opencv-python'
+          'opencv-python',
+          'cargo',
+          'rust',
+          'Tkinter'
       ]
 )

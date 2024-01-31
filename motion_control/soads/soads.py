@@ -360,7 +360,7 @@ def draw_streamlines(xg, obstacles, ax, init_pos_list, step_size=0.01, max_nr_st
         ax.quiver(arrows_X, arrows_Y, arrows_U, arrows_V, color=color, scale=50, width=0.005, scale_units='width', headlength=2, headaxislength=2)
         # ax.plot(xs[0, :], xs[1, :], color=color, linewidth=linewidth, **kwargs)
 
-def draw_vector_field(xg, obstacles, ax, workspace=None, xlim=None, ylim=None, n=50, **kwargs):
+def draw_vector_field(xg, obstacles, ax, workspace=None, xlim=None, ylim=None, n=50, crep=1., reactivity=1., **kwargs):
     if xlim is None:
         xlim = ax.get_xlim()
     if ylim is None:
@@ -377,7 +377,7 @@ def draw_vector_field(xg, obstacles, ax, workspace=None, xlim=None, ylim=None, n
         for j in range(X.shape[0]):
             x = np.array([X[i, j], Y[i, j]])
             if in_boundary(x) and np.all([o.exterior_point(x) for o in obstacles]):
-                U[i, j], V[i, j] = f(x, xg, obstacles, workspace=workspace, unit_magnitude=1)
+                U[i, j], V[i, j] = f(x, xg, obstacles, workspace=workspace, unit_magnitude=1, crep=crep, reactivity=reactivity)
             else:
                 mask[i, j] = True
                 U[i, j] = np.nan

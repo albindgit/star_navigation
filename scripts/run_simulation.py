@@ -13,19 +13,20 @@ ctrl_param_file = 'pfmpc_ds_params.yaml'
 # ctrl_param_file = 'pfmpc_obstacle_constraints_params.yaml'
 # ctrl_param_file = 'pfmpc_artificial_reference_params.yaml'
 # ctrl_param_file = 'dmp_ctrl_params.yaml'
-robot_type_id = 3
+robot_type_id = 2
 scene_id = None
-# scene_id = 13
+scene_id = 17
 verbosity = 0
 show_mpc_solution = 0
 show_mpc_cost = 0
 show_u_history = 1
-show_timing = 0
+show_timing = 1
 
 scene, robot, controller, x0 = load_config(ctrl_param_file=ctrl_param_file, robot_type_id=robot_type_id, scene_id=scene_id, verbosity=verbosity)
 
 # x0[:2] = [0., -5.]
-
+# x0s_10 = [[-2.5, 1.5, 0.], [2.4, -3.5, 0.], [3, .5, 0.], [2, 2.5, 0.], [-5, -5.5, 0.], [-2.8, -3.8, 0.]]
+# x0 = np.array(x0s_10[4])
 
 if hasattr(controller, 'mpc'):
     gui = PFMPCGUI(robot, scene, x0, scene.xlim, scene.ylim,
@@ -33,19 +34,20 @@ if hasattr(controller, 'mpc'):
                    controller=controller, robot_alpha=1., robot_color='k',
                    obstacles_star_alpha=0.2, obstacles_star_show_reference=0,
                    obstacles_star_color='b',
-                   # workspace_rho_color='None',
+                   workspace_rho_color='b',
                    # show_obs_name=1,
                    reference_color='y',
                    reference_markersize=10,
                    pg_markersize=10, pg_color='b', pg_marker='*',
                    theta_pos_color='g', theta_pos_marker='*', theta_pos_markersize=10,
                    s1_pos_color='g', s1_pos_marker='+', s1_pos_markersize=0,
-                   mpc_path_linestyle='-', mpc_path_linewidth=4, mpc_path_color='k',
+                   mpc_path_linestyle=':', mpc_path_linewidth=4, mpc_path_color='None',
                    mpc_tunnel_color='None',
-                   travelled_path_linestyle='--', travelled_path_linewidth=3,
+                   travelled_path_linestyle='-', travelled_path_linewidth=3,
                    receding_path_color='g',
                    receding_path_linewidth=2,
-                   show_time=1, show_timing=1, show_axis=0
+                   indicate_sbc=1,
+                   show_time=1, show_timing=show_timing, show_axis=1,
                    )
 else:
     gui = StarobsGUI(robot, scene, x0, scene.xlim, scene.ylim)
@@ -53,7 +55,7 @@ else:
 workspaces = scene.workspace if isinstance(scene.workspace, list) else [scene.workspace]
 
 # Initialize
-T_max = 200
+T_max = 50
 theta_max = 100
 dt = 0.01
 dt_gui = 0.1
@@ -70,6 +72,7 @@ if 'workspace_detailed' in controller.timing:
 
 # Init video writing
 if make_video:
+    frame_cntr = 0
     video_name = input("Video file name: ")
     video_writer = VideoWriter(video_name, 1/dt_gui)
     gui.paused = False
@@ -101,6 +104,7 @@ while gui.fig_open and k*dt <= T_max and controller.theta <= theta_max and not c
             active_ws_idx += 1
             if len(scene.reference_path) == 1:
                 controller.set_reference_path([scene.ws_attractors[active_ws_idx]])
+                scene.reference_path = [scene.ws_attractors[active_ws_idx]]
 
     # Move obstacles
     scene.step(dt, p)
@@ -116,21 +120,28 @@ while gui.fig_open and k*dt <= T_max and controller.theta <= theta_max and not c
         # Compute mpc
         controller.update_policy(x, scene.obstacles, workspace=workspaces[active_ws_idx])
         u = controller.compute_u(x)
+
+        # Add input noise
+        u_noise = [.1 * np.random.randn(), .1 * np.random.randn()]
+        print(u_noise[0]/1, u_noise[1]/1.5)
+        u[0] = u[0] + u_noise[0]
+        u[1] = u[1] + u_noise[1]
+
         gui.update(x, k*dt, controller, u)
         # Update timing
-        tot_time = 0
-        for key in timing.keys():
-            timing[key] += [controller.timing[key]]
-        if 'workspace_detailed' in controller.timing and controller.timing['workspace_detailed'] is not None:
-            for i, key in enumerate(workspace_timing_detailed.keys()):
-                workspace_timing_detailed[key] += [controller.timing['workspace_detailed'][i]]
-            # tot_time += v
-        # timing['tot'] += [tot_time]
+        if k > 0:
+            for key in timing.keys():
+                if key == 'tot':
+                    continue
+                timing[key] += [controller.timing[key]]
+            if 'workspace_detailed' in controller.timing and controller.timing['workspace_detailed'] is not None:
+                for i, key in enumerate(workspace_timing_detailed.keys()):
+                    workspace_timing_detailed[key] += [controller.timing['workspace_detailed'][i]]
 
         # if controller.mode == ControlMode.SBC:
         #     print("SBC at time {:.2f} (k={:.0f})".format(k*dt, k))
 
-    # # For Fig 8.b
+    # For Fig 8.b
     # if k == 1250:
     #     xmin, ymin, xmax, ymax = controller.workspace_rho.polygon().bounds
     #     draw_vector_field(controller.pg, controller.obstacles_star, xlim=[xmin, xmax], ylim=[ymin, ymax],
@@ -138,7 +149,7 @@ while gui.fig_open and k*dt <= T_max and controller.theta <= theta_max and not c
     #     plt.pause(0.5)
     #     while not gui.fig.waitforbuttonpress(): pass
     #
-    # # For Fig 8.c
+    # For Fig 8.c
     # if k == 1360:
     #     print("SBC at time {:.2f} (k={:.0f})".format(k*dt, k))
     #     xlim, ylim = gui.ax.get_xlim(), gui.ax.get_ylim()
@@ -178,11 +189,26 @@ while gui.fig_open and k*dt <= T_max and controller.theta <= theta_max and not c
         gui.update(x, k*dt)
 
         if make_video:
-            video_writer.add_frame(gui.fig)
+
+            # if scene_id == 19:
+            #     wait_frames = {1/dt: 2, 5/dt: 2, 6.6/dt: 2}
+            #     for j in range(2/gui_sim_dt_ratio):
+            #         video_writer.add_frame(gui.fig)
+
+            video_writer.add_frame(gui.fig, frame_cntr)
+            frame_cntr += 1
             print("[VideoWriter] wrote frame at time {:.2f}/{:.2f}".format(k * dt, T_max))
         else:
             plt.pause(0.005)
 
+    #
+    # r = controller.rhrp_path[-1]
+    # mu = controller.obstacles_star[0].reference_direction(r)
+    # n = controller.obstacles_star[0].normal(r)
+    # b = controller.obstacles_star[0].boundary_mapping(r)
+    # gui.ax.quiver(*b, *mu)
+    # gui.ax.quiver(*b, *n, color='r')
+    #
     # from motion_control.soads import compute_weights
     # import shapely
     # gammas = [obs.distance_function(p) for obs in controller.obstacles_star]
@@ -212,10 +238,10 @@ while gui.fig_open and k*dt <= T_max and controller.theta <= theta_max and not c
 
     # Convergence and collision check
     converged = controller.theta >= controller.theta_g and np.linalg.norm(robot.h(x)-scene.reference_path[-1]) < controller.params['convergence_tolerance']
+    # print(np.linalg.norm(robot.h(x)-scene.reference_path[-1]), controller.params['convergence_tolerance'], converged)
     collision = any([o.interior_point(robot.h(x)) for o in scene.obstacles])
     if collision:
         print("Collision")
-
 
 if make_video:
     # close video writer
@@ -227,29 +253,34 @@ else:
     gui.ax.set_title("Time: {:.1f} s. Finished".format(k*dt))
 
     if show_timing:
+        t = [np.array(timing['workspace']), np.array(timing['target']), np.array(timing['mpc'])]
         fig, ax = plt.subplots()
-        ax.plot(timing['workspace'])
-        ax.plot(timing['target'])
-        ax.plot(timing['mpc'])
-        ax.legend(['Workspace modification', 'Target path generation', 'MPC'])
-        columns = ['min', 'max', 'mean']
+        ax.fill_between(range(len(timing['workspace'])), 0*t[0], t[0])
+        ax.fill_between(range(len(timing['workspace'])), t[0], t[0]+t[1])
+        ax.fill_between(range(len(timing['workspace'])), t[0]+t[1], t[0]+t[1]+t[2])
+        # ax.plot(np.array(timing['workspace'])+np.array(timing['target']))
+        # ax.plot(np.array(timing['workspace'])+np.array(timing['target'])+np.array(timing['mpc']),'--')
+        # ax.plot(timing['tot'], '--')
+        ax.legend(['Environment modification', 'RHRP', 'MPC'])
 
+        columns = ['min', 'max', 'mean']
         rows = []
         data = []
         for k, v in timing.items():
+            first_zero = np.where(np.array(v) == 0)[0][0]
             rows += [k]
-            data += [[np.min(v), np.max(v), np.mean(v)]]
-        if 'workspace_detailed' in controller.timing:
-            rows += [""]
-            data += [[None, None, None]]
-            for k, v in workspace_timing_detailed.items():
-                rows += [k]
-                data += [[np.min(v), np.max(v), np.mean(v)]]
+            data += [[np.min(v[:first_zero]), np.max(v), np.mean(v)]]
+        # if 'workspace_detailed' in controller.timing:
+        #     rows += [""]
+        #     data += [[None, None, None]]
+        #     for k, v in workspace_timing_detailed.items():
+        #         rows += [k]
+        #         data += [[np.min(v), np.max(v), np.mean(v)]]
 
         # Plot bars and create text labels for the table
         cell_text = []
         for row in range(len(rows)):
-            if row == 3:
+            if data[row][0] is None:
                 cell_text.append(["", "", ""])
             else:
                 cell_text.append(["{:.2f}".format(t) for t in data[row]])
@@ -262,19 +293,12 @@ else:
         # Adjust layout to make room for the table:
         # plt.subplots_adjust(left=0.2, bottom=0.4)
         fig.tight_layout()
-        # plt.subplots_adjust(hspace=0.2)
+        plt.subplots_adjust(hspace=0.2)
 
         # plt.ylabel(f"Loss in ${value_increment}'s")
         # plt.yticks(values * value_increment, ['%d' % val for val in values])
         plt.xticks([])
         plt.title('Computation time')
-        #
-        # fig, ax = plt.subplots()
-        # ax.plot(timing['workspace'])
-        # ax.plot(timing['target'])
-        # ax.plot(timing['mpc'])
-        # # ax.plot(timing['tot'])
-        # ax.legend(['Workspace modification', 'Target path generation', 'MPC'])
 
     # Wait until figure closed when converged
     plt.show()

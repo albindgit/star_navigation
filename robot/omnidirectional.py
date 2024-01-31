@@ -6,7 +6,7 @@ class Omnidirectional(MobileRobot):
 
     def __init__(self, radius, vel_max, name='robot'):
         vel_max = vel_max * np.ones(2)
-        self.vmax = np.linalg.norm(vel_max)
+        self.vmax = float(np.linalg.norm(vel_max))
         super().__init__(nu=2, nx=2, radius=radius, name=name, u_min=(-vel_max).tolist(), u_max=(vel_max).tolist())
 
     def f(self, x, u):
